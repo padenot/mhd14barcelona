@@ -66,7 +66,6 @@ function remove_key_selection() {
 }
 $('body').keypress(function(e){
   if (e.keyCode == 13) { // enter
-    console.log("got enter.");
     load_cut_sample(dragstate.down.x / selection.width, dragstate.up.x / selection.width);
     return;
   }
@@ -100,9 +99,7 @@ board.append("rect")
   });
 
 var update_board_from_mouse = function(light) {
-  console.log("a");
   return function(e) {
-    console.log("b")
     var b = $(e.currentTarget)
     data = { x: b.data('x'), y: b.data('y'), i: light }
     device.receive({ data: JSON.stringify(data)});
@@ -110,7 +107,6 @@ var update_board_from_mouse = function(light) {
   }
 }
 $('.board-button').mouseover(function(e){
-  console.log("c");
   update_board_from_mouse(mouseDown)(e);
 })
 $('.board-button').mousedown(update_board_from_mouse(1))
@@ -123,7 +119,6 @@ function prep_active_sample_for_removal(sample) {
   chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
   currentKeyCode = (sample.sampleIndex+1).toString().charCodeAt(0)
   chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', true)
-  console.log(currentKeyCode);
 }
 function handle_sample_swap_click(sample) {
   for (var i = 0; i < 8; ++i) {
@@ -153,7 +148,6 @@ function load_in_editor(sample) {
     editor.buffer = data;
     editor.sample = sample;
     var factor = data.length / window.innerWidth;
-    console.log(data.length, window.innerWidth, factor);
     selection.width = cvs.width = data.length / factor;
     selection.height = cvs.height = 256;
     // var box = cvs.getBoundingClientRect();
@@ -177,12 +171,22 @@ function load_in_editor(sample) {
       rms /= len;
       return rms;
     }
+
     var j = 0;
+    var max = 0;
+    // rms by chunk to determine a normalization factor
     for (var i = 0; i < b.length; i=Math.floor(i+factor)) {
-      var rmsvalue = rms(b, i, factor) * 256;
+      var rmsvalue = rms(b, i, factor);
+      max = Math.max(max, rmsvalue);
+    }
+    var boost = (0.5 / max) * 256;
+    for (var i = 0; i < b.length; i=Math.floor(i+factor)) {
+      var rmsvalue = rms(b, i, factor) * boost;
       rmsvalue = Math.max(1.0, rmsvalue);
-      c.fillRect(j, cvs.height / 2, 1, -rmsvalue);
-      c.fillRect(j++, cvs.height / 2, 1, +rmsvalue);
+      c.fillStyle = "rgba(0, 0, 0, 1.0)";
+      c.fillRect(j++, cvs.height / 1.3, 1.5, -rmsvalue * 1.5);
+      c.fillStyle = "rgba(0, 0, 0, 0.4)";
+      c.fillRect(j++, cvs.height / 1.3, 1.5, +rmsvalue * 0.5);
     }
   });
 }
@@ -192,13 +196,11 @@ cvs = document.querySelector("#preview");
 selection = document.querySelector("#selection");
 
 selection.addEventListener("mousedown", function(e) {
-  console.log("down");
   dragstate.dragging = true;
   dragstate.down = {x: e.layerX, y: e.layerY};
 });
 
 selection.addEventListener("mouseup", function(e) {
-  console.log("up")
   dragstate.dragging = false;
   if (!dragstate.moved) {
     return;
@@ -207,7 +209,6 @@ selection.addEventListener("mouseup", function(e) {
 });
 
 selection.addEventListener("mousemove", function(e) {
-  console.log("move")
   if (!dragstate.dragging) {
     return;
   }
@@ -215,8 +216,7 @@ selection.addEventListener("mousemove", function(e) {
     dragstate.ctx = selection.getContext("2d");
   }
   dragstate.ctx.clearRect(0, 0, selection.width, selection.height);
-  dragstate.ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
-  console.log(e);
+  dragstate.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
   dragstate.ctx.fillRect(dragstate.down.x, 0, e.layerX - dragstate.down.x, selection.height);
   dragstate.moved = true;
 });
@@ -230,7 +230,6 @@ function load_cut_sample(start, end) {
     offset_s = end_s;
     end_s = tmp;
   }
-  console.log("frames: " +(end_s - offset_s) * ctx.sampleRate);
   var buf = ctx.createBuffer(1, (end_s - offset_s) * ctx.sampleRate, ctx.sampleRate);
   var channel = buf.getChannelData(0);
   var start_frames = Math.floor(offset_s * ctx.sampleRate);
@@ -253,7 +252,6 @@ function load_cut_sample(start, end) {
   update_waiting();
 
   for (var i = 0; i < 8; ++i) {
-    console.log((i+1).toString().charCodeAt(0), currentKeyCode);
     if ((i+1).toString().charCodeAt(0) == currentKeyCode) {
       switchSample(i, s.sampleIndex);
     }
