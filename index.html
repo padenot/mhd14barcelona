@@ -1,4 +1,4 @@
-<meta charset=utf-8>
+
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="style.css">
@@ -7,6 +7,8 @@
 <script src="app.js"></script>
 <svg class="chart"> </svg>
 <script src="board.js"></script>
+<script src="https://www.rdio.com/api/api.js?client_id=ka__oAAJoYKDCd-bwedD_w"></script>
+
 </head>
 <body>
 <!--<p>-->
@@ -23,6 +25,15 @@
   <canvas id=selection></canvas>
 </div>
 
+<div>
+  <div class="sign-in button hidden">Click to sign-in with Rdio</div>
+  <div class="authed hidden">
+    You're totally authenticated<br>
+    Try loading a track: <input type="text" class="track-id" value="t47579393"/><div class="button load-track">LOAD</div>
+
+  </div>
+</div>
+<script src="rdio.js"></script>
 
 </body>
 </html>

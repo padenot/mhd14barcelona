@@ -138,6 +138,16 @@ Sample.prototype.progress = function() {
   var on = {x: this.current_button, y: this.line, i:1};
   this.device.send(on);
 }
+Sample.prototype.display_name = function() {
+  var duration_s = Math.round(this.audio_buffer.duration * 1000);
+  if (!this.url) {
+    return "cut sample " + duration_s;
+  }
+  return this.url + ":" +  duration_s + "ms";
+}
+Sample.prototype.duration_s = function() {
+  return this.audio_buffer.duration;
+}
 
 function Device(connection) {
   this.connection_valid = false;
