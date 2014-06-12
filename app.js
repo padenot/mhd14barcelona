@@ -11,9 +11,15 @@ connection.onerror = function (error) {
 
 connection.onmessage = function (message) {
   var obj = JSON.parse(message.data);
-  if (obj.i == 1) {
-    s.trigger(obj.x);
+  // ignore button release events
+  if (obj.i == 0) {
+    return;
   }
+  // sample note loaded on this line
+  if (!lines[obj.y]) {
+    return;
+  }
+  lines[obj.y].trigger(obj.x);
 };
 
 window.onbeforeunload = function() {
@@ -105,9 +111,15 @@ Sample.prototype.progress = function() {
 
 var ctx = new AudioContext();
 var device = {};
-s = new Sample(ctx.destination, "think-looped-mono.wav", 0, device, function() {
-  console.log("loaded");
+var lines  = [];
+lines[0] = new Sample(ctx.destination, "think-looped-mono.wav", 0, device, function() {
+  console.log("loaded 1");
+});
+lines[1] = new Sample(ctx.destination, "think-looped-mono.opus", 1, device, function() {
+  console.log("loaded 2");
 });
 
-s.init();
+for (var i in lines) {
+  lines[i].init();
+}
 
