@@ -1,8 +1,9 @@
-var connection = new WebSocket('ws://127.0.0.1:1337');
+var connection = new WebSocket('ws://127.0.0.1:8888', 'sharks');
 
 connection.onopen = function () {
     // connection is opened and ready to use
    console.log("open")
+   device.connection_valid = true
 };
 
 connection.onerror = function (error) {
@@ -132,9 +133,10 @@ Sample.prototype.progress = function() {
 }
 
 function Device(connection) {
+  this.connection_valid = false;
   this.connection = connection;
   if (this.connection) {
-    connection.onmessage = this.receive.bind(this); 
+    this.connection.onmessage = this.receive.bind(this); 
   }
   // bidimensional array of buttons
   this.down = [];
@@ -144,13 +146,14 @@ function Device(connection) {
 }
 
 Device.prototype.send = function(data) {
-  if (this.connection) {
-    connection.send(JSON.stringify(data));
+  if (this.connection && this.connection_valid) {
+    this.connection.send(JSON.stringify(data));
   }
   update_board_lights(data);
 }
 
 Device.prototype.receive = function(message) {
+  console.log("totes receive");
   var obj = JSON.parse(message.data);
   if (obj.i == 1) {
     this.down[obj.y].push(obj.x);

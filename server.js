@@ -1,8 +1,15 @@
+
+
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var monome = require('monode')();
 var device = null;
 var connection = null;
+var http = require("http"),
+    url = require("url"),
+    path = require("path"),
+    fs = require("fs")
+    port = process.argv[2] || 8888;
 
 monome.on('connect', function(adevice) {
   device = adevice;
@@ -10,10 +17,35 @@ monome.on('connect', function(adevice) {
 
 
 var server = http.createServer(function(request, response) {
-    // process HTTP request. Since we're writing just WebSockets server
-    // we don't have to implement anything.
-});
-server.listen(1337, function() { });
+  console.log("sup yo")
+  var uri = url.parse(request.url).pathname
+    , filename = path.join(process.cwd(), uri);
+  console.log(" : "+uri)
+  path.exists(filename, function(exists) {
+    if(!exists) {
+      response.writeHead(404, {"Content-Type": "text/plain"});
+      response.write("404 Not Found\n");
+      response.end();
+      return;
+    }
+ 
+    if (fs.statSync(filename).isDirectory()) filename += '/index.html';
+ 
+    fs.readFile(filename, "binary", function(err, file) {
+      if(err) {        
+        response.writeHead(500, {"Content-Type": "text/plain"});
+        response.write(err + "\n");
+        response.end();
+        return;
+      }
+ 
+      response.writeHead(200);
+      response.write(file, "binary");
+      response.end();
+    });
+  });
+}).listen(parseInt(port, 10));
+ 
 
 // create the server
 wsServer = new WebSocketServer({
@@ -23,7 +55,10 @@ wsServer = new WebSocketServer({
 
 // WebSocket server
 wsServer.on('request', function(request) {
-    connection = request.accept(null, request.origin);
+    if (!device) {
+      return;
+    }
+    connection = request.accept('sharks', request.origin);
     console.log("connected");
 
     var animation_start = Date.now();
@@ -94,3 +129,9 @@ wsServer.on('request', function(request) {
       console.log("close");
     });
 })
+
+
+
+ 
+
+console.log("Static file server running at\n  => http://localhost:" + port + "/\nCTRL + C to shutdown");
