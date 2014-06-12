@@ -173,7 +173,6 @@ Device.prototype.send = function(data) {
 }
 
 Device.prototype.receive = function(message) {
-  console.log("totes receive");
   var obj = JSON.parse(message.data);
   if (obj.i == 1) {
     this.down[obj.y].push(obj.x);
@@ -272,10 +271,11 @@ function switchSample(lineIndex, sampleIndex) {
       update_sample(this.line, this);
 
       samples[sampleIndex] = old_lines[lineIndex].url
-      update_sample(sample, old_lines[lineIndex])
+      update_sample(sampleIndex, old_lines[lineIndex])
     });
     lines[lineIndex].init();
   }
+  remove_key_selection();
 }
 // keyboard
 window.addEventListener("keyup", function(e) {

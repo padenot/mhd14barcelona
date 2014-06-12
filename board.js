@@ -2,16 +2,16 @@
 // TODO : load new samples dynamically
 
 var ui = {
-  width: 20,  //button size
-  height: 20, //button size
-  padding: 3,
-  color_down: 'rgb(255, 184, 0)',
-  color_up: 'rgb(179, 171, 153)'
+  offset_x: 5,
+  offset_y: 5,
+  width: 30,  //button size
+  height: 30, //button size
+  padding: 3
 }
 
 var chart = d3.select(".chart")
   .attr("width", 800)
-  .attr("height", 500);
+  .attr("height", 700);
 
 // ================ board data
 var board_data = [];
@@ -22,7 +22,7 @@ for (var x = 0; x < 16; ++x) {
 }
 
 function update_board_lights(d){
-  chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').style("fill", (d.i) ? ui.color_down : ui.color_up)
+  chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').classed('pressed', d.i);
 }
 
 // ============== sample data
@@ -45,21 +45,25 @@ for (var i = 8; i < samples.length; ++i) {
 }
 
 function update_sample(index, sample) {
-  chart.selectAll('[data-sample="' + index + '"] text').text(sample.display_name());
+  chart.selectAll('[data-sample="' + index + '"] .display-name').text(sample.display_name());
   chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.duration_s()))
 }
 
 // ========== user interaction state/data
 
-var mouseDown = 0;
+var mouseDown = false;
 document.body.onmousedown = function() { 
-  ++mouseDown;
+  mouseDown = true;
 }
 document.body.onmouseup = function() {
-  --mouseDown;
+  mouseDown = false;
 }
 
 var currentKeyCode = null;
+function remove_key_selection() {
+  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
+  currentKeyCode = null;
+}
 $('body').keypress(function(e){
   if (e.keyCode == 13) { // enter
     console.log("got enter.");
@@ -78,51 +82,40 @@ var board = chart.selectAll("g")
   .enter().append("g")
   .attr("transform", function(d, i) { 
     d.index = i;
-    return "translate(" + (d.x * (ui.width + ui.padding)) + "," + (d.y * (ui.height + ui.padding)) + ")";
+    return "translate(" + (d.x * (ui.width + ui.padding) + ui.offset_x) + "," + (d.y * (ui.height + ui.padding) + ui.offset_y) + ")";
   });
 
 board.append("rect")
   .attr("class", "board-button")
-  .attr("data-index", function(d) { return d.index })
   .attr("data-x", function(d) { return d.x })
   .attr("data-y", function(d) { return d.y })
   .attr("width", ui.width)
   .attr("x", 0)
   .attr("y", 0)
+  .attr("rx", 3)
+  .attr("ry", 3)
   .attr("height", ui.height)
-  .style("fill", function(d) {
-    return ui.color_up
-  })
   .style("opacity", function(d) {
     return 0.5
   });
 
+var update_board_from_mouse = function(light) {
+  console.log("a");
+  return function(e) {
+    console.log("b")
+    var b = $(e.currentTarget)
+    data = { x: b.data('x'), y: b.data('y'), i: light }
+    device.receive({ data: JSON.stringify(data)});
+    update_board_lights(data)
+  }
+}
 $('.board-button').mouseover(function(e){
-  var b = $(e.currentTarget)
-  data = { x: b.data('x'), y: b.data('y'), i: (mouseDown) ? 1 : 0 }
-  device.receive({ data: JSON.stringify(data)});
-  update_board_lights(data)
+  console.log("c");
+  update_board_from_mouse(mouseDown)(e);
 })
-
-$('.board-button').mousedown(function(e){
-  var b = $(e.currentTarget)
-  data = { x: b.data('x'), y: b.data('y'), i: 1 }
-  device.receive({ data: JSON.stringify(data)});
-  update_board_lights(data)
-})
-
-$('.board-button').mouseout(function(e){
-  var b = $(e.currentTarget)
-  data = { x: b.data('x'), y: b.data('y'), i: 0 }
-  device.receive({ data: JSON.stringify(data)});
-  update_board_lights(data)
-})
-$('.board-button').mouseup(function(e){
-  var b = $(e.currentTarget)
-  data = { x: b.data('x'), y: b.data('y'), i: 0 }
-  device.receive({ data: JSON.stringify(data)});
-  update_board_lights(data)
-})
+$('.board-button').mousedown(update_board_from_mouse(1))
+$('.board-button').mouseout(update_board_from_mouse(0))
+$('.board-button').mouseup(update_board_from_mouse(0))
 
 // ======= Render the samples
 
@@ -267,31 +260,42 @@ function load_cut_sample(start, end) {
   }
 }
 
-var blobs = chart.selectAll('.active-sample')
-  .data(active_samples)
-  .enter().append("g")
-  .on("click", prep_active_sample_for_removal)
-  .attr("class", "active-sample")
-  .attr("data-sample", function(d) { return d.sampleIndex })
-  .attr("transform", function(d, i) { 
-    return "translate("+ (17 * (ui.width + ui.padding)) +", " + i * (ui.height + ui.padding) + ")";
-  });
+var time = d3.scale.linear().domain([0, 32]).range([100, 350]);
 
-var time = d3.scale.linear().domain([0, 20]).range([100, 350]);
+var blobs = build_sample_line('active-sample', active_samples, true, prep_active_sample_for_removal)
+function build_sample_line(class_name, data, keyed, click_handler) {
+  var blobs = chart.selectAll('.' + class_name)
+    .data(active_samples)
+    .enter().append("g")
+    .on("click", prep_active_sample_for_removal)
+    .attr("class", class_name)
+    .attr("data-sample", function(d) { return d.sampleIndex })
+    .attr("transform", function(d, i) { 
+      return "translate("+ (17 * (ui.width + ui.padding)) +", " + (i * (ui.height + ui.padding) + ui.offset_y) + ")";
+    });
+  blobs.append("rect")
+    .attr("class", function(d, i) {
+      return (keyed) ? "keyed-" + (i+1).toString().charCodeAt(0) : '';
+    })
+    .attr("width", 300)
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("height", ui.height) 
+  blobs.append("text")
+    .attr("class", "display-name")
+    .on("click", click_handler)
+    .text(function(s){ return s.name })
+    .attr("height", ui.height + ui.padding)
+    .attr("dy", "1.2em")
+  return blobs;
+}
 
-blobs.append("rect")
-  .attr("class", function(d, i) {
-    return "keyed-" + (i+1).toString().charCodeAt(0)
-  })
-  .attr("width", 300)
-  .attr("x", 0)
-  .attr("y", 0)
-  .attr("height", ui.height)
 blobs.append("text")
-  .on("click", prep_active_sample_for_removal)
-  .text(function(s){ return s.name })
+  .attr("class", "row-id")
+  .text(function(s,i){ return i+1 })
   .attr("height", ui.height + ui.padding)
-  .attr("dy", "1em")
+  .attr("dy", "1.8em")
+  .attr("x", "-15")
 
 function update_waiting() {
   var blobs = chart.selectAll('.waiting-sample')
@@ -302,7 +306,6 @@ function update_waiting() {
     .attr("transform", function(d, i) { 
       return "translate(0, " + (i + 9) * (ui.height + ui.padding) + ")";
     });
-
   blobs.append("rect")
     .attr("width", 300)
     .attr("x", 0)
@@ -315,5 +318,27 @@ function update_waiting() {
     .attr("height", ui.height + ui.padding)
     .attr("dy", "1em")
 }
+// =======
+// var blobs = chart.selectAll('.waiting-sample')
+//   .data(waiting_samples)
+//   .enter().append("g")
+//   .attr("data-sample", function(d) { return d.sampleIndex })
+//   .attr("class", "waiting-sample")
+//   .attr("transform", function(d, i) { 
+//     return "translate(0, " + (i + 9) * (ui.height + ui.padding) + ")";
+//   });
+
+// blobs.append("rect")
+//   .attr("width", 300)
+//   .attr("x", 0)
+//   .attr("y", 0)
+//   .attr("height", ui.height)
+//   .on("click", handle_sample_swap_click)
+// blobs.append("text")
+//   .text("66")//function(s){ return s.name })
+//   .on("click", handle_sample_swap_click)
+//   .attr("height", ui.height + ui.padding)
+//   .attr("dy", "1em")
+// >>>>>>> Stashed changes
 
 update_waiting();
