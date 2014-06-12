@@ -125,13 +125,31 @@ Device.prototype.receive = function(message) {
 var ctx = new AudioContext();
 var device = new Device(connection);
 var lines  = [];
+var samples = [
+"P5mlrDRUMS.ogg",
+"P5mlrVOICE2.ogg",
+"P5mlrARPCHORD.ogg",
+"P5mlrARP.ogg",
+"P5mlrCHORDs.ogg",
+"P5mlrDUB.ogg",
+"P5mlrGTR1.ogg",
+"P5mlrGTR2.ogg",
+"P5mlrGTR3.ogg",
+"P5mlrGTrSTr.ogg",
+"P5mlrHARD1.ogg",
+"P5mlrHARD2.ogg",
+"P5mlrHARDDUB.ogg",
+"P5mlrSTRINGS.ogg",
+"P5mlrVOICE.ogg",
+];
+var sample_dir = "samples/"
 
-lines[0] = new Sample(ctx.destination, "think-looped-mono.wav", 0, device, function() {
-  console.log("loaded 1");
-});
-lines[1] = new Sample(ctx.destination, "think-looped-mono.opus", 1, device, function() {
-  console.log("loaded 2");
-});
+// load the first 8 samples
+for (var i = 0; i < 8; i++) {
+  lines[i] = new Sample(ctx.destination, sample_dir + samples[i], i, device, function() {
+    console.log("loaded ", samples[i]);
+  });
+}
 
 for (var i in lines) {
   lines[i].init();
