@@ -1,0 +1,24 @@
+{
+  "name": "mhd-barcelona",
+  "version": "0.0.0",
+  "description": "monome + web audio api app",
+  "main": "server.js",
+  "dependencies": {
+    "monode": "~2.2.3",
+    "websocket": "~1.0.8"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:padenot/mhd14barcelona.git"
+  },
+  "keywords": [
+    "monome"
+  ],
+  "author": "Paul Adenot",
+  "license": "BSD"
+}
