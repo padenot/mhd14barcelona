@@ -11,7 +11,7 @@ for (var x = 0; x < 16; ++x) {
     data.push({ x: x, y: y, i: 0});
   }
 }
-function updateUi(){
+function updateUi(d){
   chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').style("fill", (d.i) ? ui.color_down : ui.color_up)
 }
 
@@ -61,8 +61,10 @@ $('.board-button').mouseover(function(e){
   var index = b.data('index')
   if (mouseDown) {
     chart.selectAll('[data-index="' + index + '"]').style("fill", ui.color_down)
+    device.receive({ data: JSON.stringify({x: b.data('x'), y: b.data('y'), i: 1}) });
   } else {
     chart.selectAll('[data-index="' + index + '"]').style("fill", ui.color_up)
+    device.receive({ data: JSON.stringify({x: b.data('x'), y: b.data('y'), i: 0}) });
   }
 })
 
@@ -70,20 +72,23 @@ $('.board-button').mousedown(function(e){
   var b = $(e.currentTarget)
   var index = b.data('index')
   chart.selectAll('[data-index="' + index + '"]').style("fill", ui.color_down)
+  device.receive({ data: JSON.stringify({x: b.data('x'), y: b.data('y'), i: 1}) });
 })
 $('.board-button').mouseout(function(e){
   var b = $(e.currentTarget)
   var index = b.data('index')
   chart.selectAll('[data-index="' + index + '"]').style("fill", ui.color_up)
+  device.receive({ data: JSON.stringify({x: b.data('x'), y: b.data('y'), i: 0}) });
 })
 $('.board-button').mouseup(function(e){
   var b = $(e.currentTarget)
   var index = b.data('index')
   chart.selectAll('[data-index="' + index + '"]').style("fill", ui.color_up)
+  device.receive({ data: JSON.stringify({x: b.data('x'), y: b.data('y'), i: 0}) });
 })
 
-connection.onmessage = function (message) {
-  var d = JSON.parse(message.data)
-  chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').style("fill", (d.i) ? ui.color_down : ui.color_up)
-  connection.send(message.data);
-};
+// connection.onmessage = function (message) {
+//   var d = JSON.parse(message.data)
+//   chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').style("fill", (d.i) ? ui.color_down : ui.color_up)
+//   connection.send(message.data);
+// };
