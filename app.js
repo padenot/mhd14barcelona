@@ -64,7 +64,6 @@ Sample.prototype.stop = function() {
 
 // index between 0 and 15
 Sample.prototype.trigger = function(index_left, index_right) {
-  console.log(index_left + " -- " + index_right);
   if (index_left < 0 && index_left > 15) {
     throw "bad left index";
   }
@@ -235,10 +234,7 @@ for (var i in lines) {
 function switchSample(lineIndex, sampleIndex) {
   console.log("Switching active sample "+lines[lineIndex].url+" with passive sample "+samples[sampleIndex])
   if (!old_lines[lineIndex]) {
-    console.log(" storing the old lines")
     old_lines[lineIndex] = lines[lineIndex]
-  } else {
-    console.log("old lines linger")
   }
   lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
     console.log("loaded ", samples[sampleIndex]);
@@ -258,6 +254,9 @@ window.addEventListener("keyup", function(e) {
   }
   if (e.keyCode == 48 + 8 + 1) {
     render();
+  }
+  if (e.keyCode == 48) {
+    lines.forEach(function(l){ l.stop() });
   }
 });
 
