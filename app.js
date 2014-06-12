@@ -254,6 +254,7 @@ for (var i in lines) {
 }
 
 function switchSample(lineIndex, sampleIndex) {
+  console.log("Siwtching current ["+lineIndex+"] with waiting ["+sampleIndex+"]")
   if (!old_lines[lineIndex]) {
     old_lines[lineIndex] = lines[lineIndex]
   }

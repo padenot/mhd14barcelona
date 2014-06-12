@@ -6,12 +6,13 @@ var ui = {
   offset_y: 5,
   width: 30,  //button size
   height: 30, //button size
+  sample_width: 350,
   padding: 3
 }
 
 var chart = d3.select(".chart")
-  .attr("width", 800)
-  .attr("height", 700);
+  .attr("width", (ui.width+ui.padding) * 17 + ui.offset_x + (2*ui.sample_width))
+  .attr("height", ((ui.height + ui.padding) * 9 + ui.offset_y));
 
 // ================ board data
 var board_data = [];
@@ -42,11 +43,12 @@ for (var i = 8; i < samples.length; ++i) {
     name: samples[i],
     sampleIndex: i
   })
+  console.log("I just made something with sample ", waiting_samples[waiting_samples.length-1])
 }
 
 function update_sample(index, sample) {
   chart.selectAll('[data-sample="' + index + '"] .display-name').text(sample.display_name());
-  chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.duration_s()))
+  chart.selectAll('[data-sample="' + index + '"] .duration').attr("width", time(sample.duration_s()))
 }
 
 // ========== user interaction state/data
@@ -258,28 +260,42 @@ function load_cut_sample(start, end) {
   }
 }
 
-var time = d3.scale.linear().domain([0, 32]).range([100, 350]);
+var time = d3.scale.linear().domain([0, 32]).range([100, ui.sample_width]);
 
-var blobs = build_sample_line('active-sample', active_samples, true, prep_active_sample_for_removal)
-function build_sample_line(class_name, data, keyed, click_handler) {
+var blobs = build_sample_line(
+  'active-sample', 
+  active_samples, 
+  true, 
+  prep_active_sample_for_removal, 
+  function(d, i) { 
+    return "translate("+ (17 * (ui.width + ui.padding)) +", " + (i * (ui.height + ui.padding) + ui.offset_y) + ")";
+  }
+)
+
+function build_sample_line(class_name, data, keyed, click_handler, translate_func) {
   var blobs = chart.selectAll('.' + class_name)
-    .data(active_samples)
+    .data(data)
     .enter().append("g")
-    .on("click", prep_active_sample_for_removal)
+    .on("click", click_handler)
     .attr("class", class_name)
-    .attr("data-sample", function(d) { return d.sampleIndex })
-    .attr("transform", function(d, i) { 
-      return "translate("+ (17 * (ui.width + ui.padding)) +", " + (i * (ui.height + ui.padding) + ui.offset_y) + ")";
-    });
+    .attr("data-sample", function(d) { console.log("I JUST GOT : ",d); return d.sampleIndex })
+    .attr("transform", translate_func);
   blobs.append("rect")
-    .attr("class", function(d, i) {
-      return (keyed) ? "keyed-" + (i+1).toString().charCodeAt(0) : '';
-    })
-    .attr("width", 300)
+    .attr("class", "sample-background")
+    .attr("width", ui.sample_width)
     .attr("x", 0)
     .attr("y", 0)
     .attr("height", ui.height) 
+  blobs.append("rect")
+    .attr("class", function(d, i) {
+      return (keyed) ? "duration keyed-" + (i+1).toString().charCodeAt(0) : 'duration';
+    })
+    .attr("width", ui.sample_width)
+    .attr("x", 2)
+    .attr("y", 2)
+    .attr("height", ui.height - 4) 
   blobs.append("text")
+    .attr("x", ui.padding)
     .attr("class", "display-name")
     .on("click", click_handler)
     .text(function(s){ return s.name })
@@ -288,6 +304,7 @@ function build_sample_line(class_name, data, keyed, click_handler) {
   return blobs;
 }
 
+// these are the row lines, they are pulled out on their own
 blobs.append("text")
   .attr("class", "row-id")
   .text(function(s,i){ return i+1 })
@@ -295,48 +312,19 @@ blobs.append("text")
   .attr("dy", "1.8em")
   .attr("x", "-15")
 
-function update_waiting() {
-  var blobs = chart.selectAll('.waiting-sample')
-    .data(waiting_samples)
-    .enter().append("g")
-    .attr("data-sample", function(d) { return d.sampleIndex })
-    .attr("class", "waiting-sample")
-    .attr("transform", function(d, i) { 
-      return "translate(0, " + (i + 9) * (ui.height + ui.padding) + ")";
-    });
-  blobs.append("rect")
-    .attr("width", 300)
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("height", ui.height)
-    .on("click", handle_sample_swap_click)
-  blobs.append("text")
-    .text(function(s){ return s.name })
-    .on("click", handle_sample_swap_click)
-    .attr("height", ui.height + ui.padding)
-    .attr("dy", "1em")
+function update_waiting() { 
+  var blobs = build_sample_line(
+    'waiting-sample', 
+    waiting_samples,
+    false, 
+    handle_sample_swap_click, 
+    function(d, i) { 
+      return "translate("+ (17 * (ui.width + ui.padding) + ui.sample_width + (3*ui.padding)) +", " + (i * (ui.height + ui.padding) + ui.offset_y) + ")";
+      // return "translate(0, " + (i + 9) * (ui.height + ui.padding) + ")";
+    }
+  )
+  var chart = d3.select(".chart")
+    .attr("height", ((ui.height + ui.padding) * Math.max(9, waiting_samples.length) + ui.offset_y));
 }
-// =======
-// var blobs = chart.selectAll('.waiting-sample')
-//   .data(waiting_samples)
-//   .enter().append("g")
-//   .attr("data-sample", function(d) { return d.sampleIndex })
-//   .attr("class", "waiting-sample")
-//   .attr("transform", function(d, i) { 
-//     return "translate(0, " + (i + 9) * (ui.height + ui.padding) + ")";
-//   });
-
-// blobs.append("rect")
-//   .attr("width", 300)
-//   .attr("x", 0)
-//   .attr("y", 0)
-//   .attr("height", ui.height)
-//   .on("click", handle_sample_swap_click)
-// blobs.append("text")
-//   .text("66")//function(s){ return s.name })
-//   .on("click", handle_sample_swap_click)
-//   .attr("height", ui.height + ui.padding)
-//   .attr("dy", "1em")
-// >>>>>>> Stashed changes
 
 update_waiting();
