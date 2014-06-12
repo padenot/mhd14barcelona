@@ -52,16 +52,25 @@ Sample.prototype.loaded = function(data) {
   this.loaded_cb();
 }
 
+Sample.prototype.stop = function() {
+  if (this.buffer_source) {
+    this.buffer_source.stop(0);
+    this.buffer_source = null;
+    clearInterval(this.progress_itv)
+    var off = {x: this.current_button, y: this.line, i:0};
+    this.device.send(off);
+  }
+}
+
 // index between 0 and 15
 Sample.prototype.trigger = function(index) {
-  console.log("Totes saw trigger " , arguments);
   if (index < 0 && index > 15) {
     throw "bad index";
   }
   if (this.buffer_source) {
     this.buffer_source.stop(0);
     clearInterval(this.progress_itv)
-    this.progress_itv = 0;
+    this.progress_itv = null;
     // turn the led off;
     var off = {x: this.current_button, y: this.line, i:0};
     this.device.send(off);
@@ -119,12 +128,18 @@ Device.prototype.receive = function(message) {
     return;
   }
   lines[obj.y].trigger(obj.x);
+  console.log("I just wondered about the state of : ",old_lines[obj.y])
+  if (old_lines[obj.y]) {
+    old_lines[obj.y].stop();
+    old_lines[obj.y] = null;
+  }
   updateUi(obj);
 }
 
 var ctx = new AudioContext();
 var device = new Device(connection);
 var lines  = [];
+var old_lines = [];
 var samples = [
 "P5mlrDRUMS.ogg",
 "P5mlrVOICE2.ogg",
@@ -145,9 +160,25 @@ var samples = [
 var sample_dir = "samples/"
 samples = samples.map(function(url) { return sample_dir + url })
 
+var analyser = ctx.createAnalyser();
+analyser.connect(ctx.destination);
+analyser.fftSize = 32;
+var array = new Uint8Array(analyser.frequencyBinCount);
+
+function render() {
+  analyser.getByteFrequencyData(array);
+  for (var i = 0 ; i < analyser.frequencyBinCount; i++) {
+    array[i] /= 32;
+  }
+  lines[0].device.send(array);
+  setTimeout(render, 1000 / 24);
+}
+
+
 // load the first 8 samples
 for (var i = 0; i < 8; i++) {
-  lines[i] = new Sample(ctx.destination, samples[i], i, device, function() {
+  old_lines[i] = null;
+  lines[i] = new Sample(analyser, samples[i], i, device, function() {
     console.log("loaded ", samples[i]);
     updateSample(this.line, this)
   });
@@ -160,14 +191,30 @@ for (var i in lines) {
 
 function switchSample(lineIndex, sampleIndex) {
   console.log("Switching active sample "+lines[lineIndex].url+" with passive sample "+samples[sampleIndex])
-  var oldSample = lines[lineIndex]
-  lines[lineIndex] = new Sample(ctx.destination, samples[sampleIndex], lineIndex, device, function() {
+  if (!old_lines[lineIndex]) {
+    console.log(" storing the old lines")
+    old_lines[lineIndex] = lines[lineIndex]
+  } else {
+    console.log("old lines linger")
+  }
+  lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
     console.log("loaded ", samples[sampleIndex]);
     updateSample(this.line, this);
 
-    samples[sampleIndex] = oldSample.url
-    updateSample(sampleIndex, oldSample)
+    samples[sampleIndex] = old_lines[lineIndex].url
+    updateSample(sampleIndex, old_lines[lineIndex])
   });
   lines[lineIndex].init();
   // TODO : gracefully shut down the old sample
 }
+// keyboard
+window.addEventListener("keyup", function(e) {
+  if (e.keyCode >= 49 && e.keyCode <= 48 + 8) {
+    var l = e.keyCode - 49;
+    lines[l].stop();
+  }
+  if (e.keyCode == 48 + 8 + 1) {
+    render();
+  }
+});
+

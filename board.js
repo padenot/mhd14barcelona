@@ -83,6 +83,18 @@ $('.board-button').mouseup(function(e){
   updateUi(data)
 })
 
+function prepSampleLine(sample) {
+  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
+  currentKeyCode = (sample.sampleIndex+1).toString().charCodeAt(0)
+  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', true)
+}
+function loadSample(sample) {
+  for (var i = 0; i < 8; ++i) {
+    if ( (i+1).toString().charCodeAt(0) == currentKeyCode) {
+      switchSample(i, sample.sampleIndex);
+    }
+  }
+}
 active_samples = [];
 lines.forEach(function(sample, i){ 
   active_samples.push({
@@ -95,6 +107,7 @@ lines.forEach(function(sample, i){
 var blobs = chart.selectAll('.active-sample')
   .data(active_samples)
   .enter().append("g")
+  .on("click", prepSampleLine)
   .attr("class", "active-sample")
   .attr("data-sample", function(d) { return d.sampleIndex })
   .attr("transform", function(d, i) { 
@@ -112,12 +125,12 @@ blobs.append("rect")
   .attr("y", 0)
   .attr("height", ui.height)
 blobs.append("text")
+  .on("click", prepSampleLine)
   .text(function(s){ return s.name })
   .attr("height", ui.height + ui.padding)
   .attr("dy", "1em")
 
 function updateSample(index, sample) {
-  // console.log("Trying to update "+index+" : given '"+time(sample.audio_buffer.duration)+"' :: ",sample)
   chart.selectAll('[data-sample="' + index + '"] text').text(sample.url + " : " + Math.round(sample.audio_buffer.duration * 1000) + "ms")
   chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.audio_buffer.duration))
 }
@@ -137,15 +150,7 @@ $('body').keypress(function(e){
   chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', true)
 });
 
-function loadSample(sample) {
-  console.log("!!!")
-  for (var i = 0; i < 8; ++i) {
-    if ( (i+1).toString().charCodeAt(0) == currentKeyCode) {
-      console.log("Time to switch out a Sample");
-      switchSample(i, sample.sampleIndex);
-    }
-  }
-}
+
 
 var blobs = chart.selectAll('.waiting-sample')
   .data(waiting_samples)
@@ -167,5 +172,4 @@ blobs.append("text")
   .on("click", loadSample)
   .attr("height", ui.height + ui.padding)
   .attr("dy", "1em")
-
 
