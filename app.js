@@ -63,9 +63,13 @@ Sample.prototype.stop = function() {
 }
 
 // index between 0 and 15
-Sample.prototype.trigger = function(index) {
-  if (index < 0 && index > 15) {
-    throw "bad index";
+Sample.prototype.trigger = function(index_left, index_right) {
+  console.log(index_left + " -- " + index_right);
+  if (index_left < 0 && index_left > 15) {
+    throw "bad left index";
+  }
+  if (index_right < 0 && index_right > 15) {
+    throw "bad right index";
   }
   if (this.buffer_source) {
     this.buffer_source.stop(0);
@@ -75,8 +79,19 @@ Sample.prototype.trigger = function(index) {
     var off = {x: this.current_button, y: this.line, i:0};
     this.device.send(off);
   }
+
+  // If we are not looping, start is the 0s
+  this.index_left = index_right ? index_left : 0;
+
+  // If we are not looping, end is the last button
+  if (index_right == undefined) {
+    this.index_right = 16;
+  } else{
+    this.index_right = index_right + 1;
+  }
+
   // set the current button.
-  this.current_button = index;
+  this.current_button = index_left;
   // light the right led
   var on = {x: this.current_button, y: this.line, i:1};
   this.device.send(on);
@@ -84,9 +99,20 @@ Sample.prototype.trigger = function(index) {
   this.buffer_source = this.sink.context.createBufferSource();
   this.buffer_source.buffer = this.audio_buffer;
   this.buffer_source.loop = true;
+
   var button_length = this.audio_buffer.duration / 16;
-  var offset_seconds = index * button_length;
+  var offset_seconds = index_left * button_length;
+
   this.buffer_source.start(0, offset_seconds, this.audio_buffer.duration)
+
+  if (this.index_right != undefined) {
+    this.buffer_source.loopStart = offset_seconds
+    this.buffer_source.loopEnd = this.index_right * button_length;
+  } else {
+    this.buffer_source.loopStart = 0
+    this.buffer_source.loopEnd = this.audio_buffer.duration;
+  }
+
   this.progress_itv = setInterval(this.progress.bind(this), button_length * 1000);
   this.buffer_source.connect(this.sink);
 }
@@ -96,7 +122,10 @@ Sample.prototype.progress = function() {
   var off = {x: this.current_button, y: this.line, i:0};
   this.device.send(off);
 
-  this.current_button = (this.current_button + 1) % 16;
+  this.current_button++;
+  if (this.current_button >= this.index_right) {
+    this.current_button = this.index_left;
+  }
 
   // turn the led on
   var on = {x: this.current_button, y: this.line, i:1};
@@ -106,7 +135,12 @@ Sample.prototype.progress = function() {
 function Device(connection) {
   this.connection = connection;
   if (this.connection) {
-    connection.onmessage = this.receive; 
+    connection.onmessage = this.receive.bind(this); 
+  }
+  // bidimensional array of buttons
+  this.down = [];
+  for (var i = 0; i < 8; i++) {
+    this.down[i] = [];
   }
 }
 
@@ -119,15 +153,25 @@ Device.prototype.send = function(data) {
 
 Device.prototype.receive = function(message) {
   var obj = JSON.parse(message.data);
-  // ignore button release events
-  if (obj.i == 0) {
+  if (obj.i == 1) {
+    this.down[obj.y].push(obj.x);
     return;
   }
   // sample not loaded on this line
   if (!lines[obj.y]) {
     return;
   }
-  lines[obj.y].trigger(obj.x);
+  if (this.down[obj.y].length > 1) {
+    this.down[obj.y] = this.down[obj.y].sort();
+    lines[obj.y].trigger(this.down[obj.y][0], this.down[obj.y][this.down[obj.y].length - 1]);
+    this.down[obj.y] = [];
+  } else {
+    if (this.down[obj.y].length == 0) {
+      return;
+    }
+    lines[obj.y].trigger(obj.x);
+    this.down[obj.y] = [];
+  }
   updateUi(obj);
 }
 
