@@ -14,6 +14,7 @@ connection.onmessage = function (message) {
   if (obj.i == 1) {
     s.trigger(obj.x);
   }
+  updateUi(obj);
 };
 
 window.onbeforeunload = function() {
@@ -88,12 +89,14 @@ Sample.prototype.progress = function() {
   // turn the led off;
   // device.led(this.current_button, this.line, 0);
   var off = {x: this.current_button, y: this.line, i:0};
+  console.log("Sending OFF : ", off)
   connection.send(JSON.stringify(off));
   this.current_button = (this.current_button + 1) % 16;
   // console.log(this.current_button);
   // turn the led on
   // device.led(this.current_button, this.line, 1);
   var on = {x: this.current_button, y: this.line, i:1};
+  console.log("Sending ON : ", on)
   connection.send(JSON.stringify(on));
 }
 
