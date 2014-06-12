@@ -71,9 +71,15 @@ Sample.prototype.trigger = function(index) {
     this.progress_itv = 0;
     // turn the led off;
     // XXX fix
-    // device.led(this.current_button, this.line, 0);
+    var off = {x: this.current_button, y: this.line, i:0};
+    connection.send(JSON.stringify(off));
   }
+  // set the current button.
   this.current_button = index;
+  // light the right led
+  var on = {x: this.current_button, y: this.line, i:1};
+  connection.send(JSON.stringify(on));
+
   this.buffer_source = this.sink.context.createBufferSource();
   this.buffer_source.buffer = this.audio_buffer;
   this.buffer_source.loop = true;
@@ -102,9 +108,8 @@ Sample.prototype.progress = function() {
 
 var ctx = new AudioContext();
 var device = {};
-s = new Sample(ctx.destination, "think-looped-mono.opus", 0, device, function() {
+s = new Sample(ctx.destination, "think-looped-mono.wav", 0, device, function() {
   console.log("loaded");
-  // s.trigger(3);
 });
 
 s.init();
