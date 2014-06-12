@@ -9,19 +9,6 @@ connection.onerror = function (error) {
   connection.close();
 };
 
-connection.onmessage = function (message) {
-  var obj = JSON.parse(message.data);
-  // ignore button release events
-  if (obj.i == 0) {
-    return;
-  }
-  // sample note loaded on this line
-  if (!lines[obj.y]) {
-    return;
-  }
-  lines[obj.y].trigger(obj.x);
-};
-
 window.onbeforeunload = function() {
   console.log("onbeforeunload")
   connection.onclose = function () {}; // disable onclose handler first
@@ -47,8 +34,8 @@ function getFile(url, cb) {
 
 function Sample(sink, url, line, device, loaded_cb) {
   this.url = url;
-  this.buffer_source ;
-  this.audio_buffer = 
+  this.buffer_source = null;
+  this.audio_buffer = null;
   this.sink = sink;
   this.current_button = 0;
   this.line = line;
@@ -67,6 +54,7 @@ Sample.prototype.loaded = function(data) {
 
 // index between 0 and 15
 Sample.prototype.trigger = function(index) {
+  console.log("Totes saw trigger " , arguments);
   if (index < 0 && index > 15) {
     throw "bad index";
   }
@@ -75,22 +63,20 @@ Sample.prototype.trigger = function(index) {
     clearInterval(this.progress_itv)
     this.progress_itv = 0;
     // turn the led off;
-    // XXX fix
     var off = {x: this.current_button, y: this.line, i:0};
-    connection.send(JSON.stringify(off));
+    this.device.send(off);
   }
   // set the current button.
   this.current_button = index;
   // light the right led
   var on = {x: this.current_button, y: this.line, i:1};
-  connection.send(JSON.stringify(on));
+  this.device.send(on);
 
   this.buffer_source = this.sink.context.createBufferSource();
   this.buffer_source.buffer = this.audio_buffer;
   this.buffer_source.loop = true;
   var button_length = this.audio_buffer.duration / 16;
   var offset_seconds = index * button_length;
-  console.log(button_length);
   this.buffer_source.start(0, offset_seconds, this.audio_buffer.duration)
   this.progress_itv = setInterval(this.progress.bind(this), button_length * 1000);
   this.buffer_source.connect(this.sink);
@@ -98,20 +84,48 @@ Sample.prototype.trigger = function(index) {
 
 Sample.prototype.progress = function() {
   // turn the led off;
-  // device.led(this.current_button, this.line, 0);
   var off = {x: this.current_button, y: this.line, i:0};
-  connection.send(JSON.stringify(off));
+  this.device.send(off);
+
   this.current_button = (this.current_button + 1) % 16;
-  // console.log(this.current_button);
+
   // turn the led on
-  // device.led(this.current_button, this.line, 1);
   var on = {x: this.current_button, y: this.line, i:1};
-  connection.send(JSON.stringify(on));
+  this.device.send(on);
+}
+
+function Device(connection) {
+  this.connection = connection;
+  if (this.connection) {
+    connection.onmessage = this.receive; 
+  }
+}
+
+Device.prototype.send = function(data) {
+  if (this.connection) {
+    connection.send(JSON.stringify(data));
+  }
+  updateUi(data);
+}
+
+Device.prototype.receive = function(message) {
+  var obj = JSON.parse(message.data);
+  // ignore button release events
+  if (obj.i == 0) {
+    return;
+  }
+  // sample not loaded on this line
+  if (!lines[obj.y]) {
+    return;
+  }
+  lines[obj.y].trigger(obj.x);
+  updateUi(obj);
 }
 
 var ctx = new AudioContext();
-var device = {};
+var device = new Device(connection);
 var lines  = [];
+
 lines[0] = new Sample(ctx.destination, "think-looped-mono.wav", 0, device, function() {
   console.log("loaded 1");
 });
