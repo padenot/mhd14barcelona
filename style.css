@@ -1,0 +1,15 @@
+.active-sample rect {
+  fill: rgba(125, 207, 125, 0.40);
+}
+.active-sample text {
+  fill: rgba(12, 12, 54, 1);
+}
+.waiting-sample rect {
+  fill: rgba(192, 187, 204, 1);
+}
+.waiting-sample text {
+  fill: rgba(43, 36, 63, 1);
+}
+.active-key-press {
+  stroke: red;
+}

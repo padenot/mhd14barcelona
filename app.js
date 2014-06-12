@@ -143,11 +143,13 @@ var samples = [
 "P5mlrVOICE.ogg",
 ];
 var sample_dir = "samples/"
+samples = samples.map(function(url) { return sample_dir + url })
 
 // load the first 8 samples
 for (var i = 0; i < 8; i++) {
-  lines[i] = new Sample(ctx.destination, sample_dir + samples[i], i, device, function() {
+  lines[i] = new Sample(ctx.destination, samples[i], i, device, function() {
     console.log("loaded ", samples[i]);
+    updateSample(this.line, this)
   });
 }
 
@@ -155,3 +157,17 @@ for (var i in lines) {
   lines[i].init();
 }
 
+
+function switchSample(lineIndex, sampleIndex) {
+  console.log("Switching active sample "+lines[lineIndex].url+" with passive sample "+samples[sampleIndex])
+  var oldSample = lines[lineIndex]
+  lines[lineIndex] = new Sample(ctx.destination, samples[sampleIndex], lineIndex, device, function() {
+    console.log("loaded ", samples[sampleIndex]);
+    updateSample(this.line, this);
+
+    samples[sampleIndex] = oldSample.url
+    updateSample(sampleIndex, oldSample)
+  });
+  lines[lineIndex].init();
+  // TODO : gracefully shut down the old sample
+}
