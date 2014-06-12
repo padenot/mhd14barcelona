@@ -13,3 +13,22 @@
 .active-key-press {
   stroke: red;
 }
+
+#preview {
+  border: 1px solid red;
+}
+
+#selection {
+  z-index: 2;
+}
+
+canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+#preview-wrapper {
+  position:relative;
+}
+

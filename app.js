@@ -34,9 +34,14 @@ function getFile(url, cb) {
 }
 
 function Sample(sink, url, line, device, loaded_cb) {
-  this.url = url;
+  if (url instanceof AudioBuffer) {
+    this.url = ""
+    this.audio_buffer = url;
+  } else {
+    this.url = url;
+    this.audio_buffer = null;
+  }
   this.buffer_source = null;
-  this.audio_buffer = null;
   this.sink = sink;
   this.current_button = 0;
   this.line = line;
@@ -45,7 +50,9 @@ function Sample(sink, url, line, device, loaded_cb) {
 }
 
 Sample.prototype.init = function() {
-  getFile(this.url, this.loaded.bind(this));
+  if (!this.audio_buffer) {
+    getFile(this.url, this.loaded.bind(this));
+  }
 }
 
 Sample.prototype.loaded = function(data) {
@@ -187,7 +194,6 @@ var lines  = [];
 // old_lines tracks samples that have been switched out but haven't been killed yet via a trigger
 var old_lines = [];
 var samples = [
-"P5mlrDRUMS.ogg",
 "P5mlrVOICE2.ogg",
 "P5mlrARPCHORD.ogg",
 "P5mlrARP.ogg",
@@ -202,6 +208,7 @@ var samples = [
 "P5mlrHARDDUB.ogg",
 "P5mlrSTRINGS.ogg",
 "P5mlrVOICE.ogg",
+"P5mlrDRUMS.ogg",
 ];
 var sample_dir = "samples/"
 samples = samples.map(function(url) { return sample_dir + url })
@@ -235,18 +242,27 @@ for (var i in lines) {
 }
 
 function switchSample(lineIndex, sampleIndex) {
-  console.log("Switching active sample "+lines[lineIndex].url+" with passive sample "+samples[sampleIndex])
   if (!old_lines[lineIndex]) {
     old_lines[lineIndex] = lines[lineIndex]
   }
-  lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
-    console.log("loaded ", samples[sampleIndex]);
-    update_sample(this.line, this);
+  if (samples[sampleIndex].buffer) {
+    lines[lineIndex] = new Sample(analyser, samples[sampleIndex].buffer, lineIndex, device, function() {
+      update_sample(this.line, this);
 
-    samples[sampleIndex] = old_lines[lineIndex].url
-    update_sample(sampleIndex, old_lines[lineIndex])
-  });
-  lines[lineIndex].init();
+      samples[sample] = old_lines[lineIndex].url
+
+      update_sample(sample, old_lines[lineIndex]);
+    });
+  } else {
+    lines[lineIndex] = new Sample(analyser, samples[sample], lineIndex, device, function() {
+      console.log("loaded ", samples[sample]);
+      update_sample(this.line, this);
+
+      samples[sample] = old_lines[lineIndex].url
+      update_sample(sample, old_lines[lineIndex])
+    });
+    lines[lineIndex].init();
+  }
 }
 // keyboard
 window.addEventListener("keyup", function(e) {
