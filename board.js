@@ -45,8 +45,8 @@ for (var i = 8; i < samples.length; ++i) {
 }
 
 function update_sample(index, sample) {
-  chart.selectAll('[data-sample="' + index + '"] text').text(sample.url + " : " + Math.round(sample.audio_buffer.duration * 1000) + "ms")
-  chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.audio_buffer.duration))
+  chart.selectAll('[data-sample="' + index + '"] text').text(sample.display_name());
+  chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.duration_ms()))
 }
 
 // ========== user interaction state/data

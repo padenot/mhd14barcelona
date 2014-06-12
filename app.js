@@ -131,6 +131,12 @@ Sample.prototype.progress = function() {
   var on = {x: this.current_button, y: this.line, i:1};
   this.device.send(on);
 }
+Sample.prototype.display_name = function() {
+  return this.url + ":" + Math.round(this.audio_buffer.duration * 1000) + "ms";
+}
+Sample.prototype.duration_ms = function() {
+  return this.audio_buffer.duration;
+}
 
 function Device(connection) {
   this.connection_valid = false;

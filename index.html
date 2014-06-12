@@ -1,4 +1,4 @@
-<meta charset=utf-8>
+
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="style.css">
@@ -7,6 +7,8 @@
 <script src="app.js"></script>
 <svg class="chart"> </svg>
 <script src="board.js"></script>
+<script src="https://www.rdio.com/api/api.js?client_id=ka__oAAJoYKDCd-bwedD_w"></script>
+
 </head>
 <body>
 <p>
@@ -18,6 +20,15 @@ Stopping a track or clicking on an "active" track will stage it for replacement 
 Clicking on a waiting sample will swap it in.  The new sample will not play until triggered.
 </p>
 
+<div>
+  <div class="sign-in button hidden">Click to sign-in with Rdio</div>
+  <div class="authed hidden">
+    You're totally authenticated<br>
+    Try loading a track: <input type="text" class="track-id" value="t47579393"/><div class="button load-track">LOAD</div>
+
+  </div>
+</div>
+<script src="rdio.js"></script>
 
 </body>
 </html>
