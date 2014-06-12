@@ -147,7 +147,7 @@ Device.prototype.send = function(data) {
   if (this.connection) {
     connection.send(JSON.stringify(data));
   }
-  updateUi(data);
+  update_board_lights(data);
 }
 
 Device.prototype.receive = function(message) {
@@ -175,12 +175,13 @@ Device.prototype.receive = function(message) {
     old_lines[obj.y].stop();
     old_lines[obj.y] = null;
   }
-  updateUi(obj);
+  update_board_lights(obj);
 }
 
 var ctx = new AudioContext();
 var device = new Device(connection);
 var lines  = [];
+// old_lines tracks samples that have been switched out but haven't been killed yet via a trigger
 var old_lines = [];
 var samples = [
 "P5mlrDRUMS.ogg",
@@ -222,14 +223,13 @@ for (var i = 0; i < 8; i++) {
   old_lines[i] = null;
   lines[i] = new Sample(analyser, samples[i], i, device, function() {
     console.log("loaded ", samples[i]);
-    updateSample(this.line, this)
+    update_sample(this.line, this)
   });
 }
 
 for (var i in lines) {
   lines[i].init();
 }
-
 
 function switchSample(lineIndex, sampleIndex) {
   console.log("Switching active sample "+lines[lineIndex].url+" with passive sample "+samples[sampleIndex])
@@ -238,13 +238,12 @@ function switchSample(lineIndex, sampleIndex) {
   }
   lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
     console.log("loaded ", samples[sampleIndex]);
-    updateSample(this.line, this);
+    update_sample(this.line, this);
 
     samples[sampleIndex] = old_lines[lineIndex].url
-    updateSample(sampleIndex, old_lines[lineIndex])
+    update_sample(sampleIndex, old_lines[lineIndex])
   });
   lines[lineIndex].init();
-  // TODO : gracefully shut down the old sample
 }
 // keyboard
 window.addEventListener("keyup", function(e) {

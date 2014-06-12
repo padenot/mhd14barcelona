@@ -1,28 +1,55 @@
-// file for each line of 16
-// pick window for each line to span
+// TODO : pick window for each line to span
+// TODO : load new samples dynamically
+
+var ui = {
+  width: 20,  //button size
+  height: 20, //button size
+  padding: 3,
+  color_down: 'rgb(255, 184, 0)',
+  color_up: 'rgb(179, 171, 153)'
+}
 
 var chart = d3.select(".chart")
   .attr("width", 800)
   .attr("height", 500);
 
-var data = [];
+// ================ board data
+var board_data = [];
 for (var x = 0; x < 16; ++x) {
   for (var y = 0; y < 8; ++y) {
-    data.push({ x: x, y: y, i: 0});
+    board_data.push({ x: x, y: y, i: 0});
   }
 }
 
-function updateUi(d){
+function update_board_lights(d){
   chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').style("fill", (d.i) ? ui.color_down : ui.color_up)
 }
 
-var ui = {
-  width: 20,
-  height: 20,
-  padding: 3,
-  color_down: 'rgb(255, 184, 0)',
-  color_up: 'rgb(179, 171, 153)'
+// ============== sample data
+
+var active_samples = [];
+lines.forEach(function(sample, i){ 
+  active_samples.push({
+    name: sample.url,
+    button: i,
+    sampleIndex: i
+  })
+})
+
+var waiting_samples = [];
+for (var i = 8; i < samples.length; ++i) {
+  waiting_samples.push({
+    name: samples[i],
+    sampleIndex: i
+  })
 }
+
+function update_sample(index, sample) {
+  chart.selectAll('[data-sample="' + index + '"] text').text(sample.url + " : " + Math.round(sample.audio_buffer.duration * 1000) + "ms")
+  chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.audio_buffer.duration))
+}
+
+// ========== user interaction state/data
 
 var mouseDown = 0;
 document.body.onmousedown = function() { 
@@ -32,8 +59,17 @@ document.body.onmouseup = function() {
   --mouseDown;
 }
 
+var currentKeyCode = null;
+$('body').keypress(function(e){
+  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
+  currentKeyCode = e.charCode;
+  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', true)
+});
+
+// ======== Rendering the board lights
+
 var board = chart.selectAll("g")
-  .data(this.data)
+  .data(board_data)
   .enter().append("g")
   .attr("transform", function(d, i) { 
     d.index = i;
@@ -60,54 +96,48 @@ $('.board-button').mouseover(function(e){
   var b = $(e.currentTarget)
   data = { x: b.data('x'), y: b.data('y'), i: (mouseDown) ? 1 : 0 }
   device.receive({ data: JSON.stringify(data)});
-  updateUi(data)
+  update_board_lights(data)
 })
 
 $('.board-button').mousedown(function(e){
   var b = $(e.currentTarget)
   data = { x: b.data('x'), y: b.data('y'), i: 1 }
   device.receive({ data: JSON.stringify(data)});
-  updateUi(data)
+  update_board_lights(data)
 })
 
 $('.board-button').mouseout(function(e){
   var b = $(e.currentTarget)
   data = { x: b.data('x'), y: b.data('y'), i: 0 }
   device.receive({ data: JSON.stringify(data)});
-  updateUi(data)
+  update_board_lights(data)
 })
 $('.board-button').mouseup(function(e){
   var b = $(e.currentTarget)
   data = { x: b.data('x'), y: b.data('y'), i: 0 }
   device.receive({ data: JSON.stringify(data)});
-  updateUi(data)
+  update_board_lights(data)
 })
 
-function prepSampleLine(sample) {
+// ======= Render the samples
+
+function prep_active_sample_for_removal(sample) {
   chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
   currentKeyCode = (sample.sampleIndex+1).toString().charCodeAt(0)
   chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', true)
 }
-function loadSample(sample) {
+function handle_sample_swap_click(sample) {
   for (var i = 0; i < 8; ++i) {
     if ( (i+1).toString().charCodeAt(0) == currentKeyCode) {
       switchSample(i, sample.sampleIndex);
     }
   }
 }
-active_samples = [];
-lines.forEach(function(sample, i){ 
-  active_samples.push({
-    name: sample.url,
-    button: i,
-    sampleIndex: i
-  })
-})
 
 var blobs = chart.selectAll('.active-sample')
   .data(active_samples)
   .enter().append("g")
-  .on("click", prepSampleLine)
+  .on("click", prep_active_sample_for_removal)
   .attr("class", "active-sample")
   .attr("data-sample", function(d) { return d.sampleIndex })
   .attr("transform", function(d, i) { 
@@ -125,31 +155,10 @@ blobs.append("rect")
   .attr("y", 0)
   .attr("height", ui.height)
 blobs.append("text")
-  .on("click", prepSampleLine)
+  .on("click", prep_active_sample_for_removal)
   .text(function(s){ return s.name })
   .attr("height", ui.height + ui.padding)
   .attr("dy", "1em")
-
-function updateSample(index, sample) {
-  chart.selectAll('[data-sample="' + index + '"] text').text(sample.url + " : " + Math.round(sample.audio_buffer.duration * 1000) + "ms")
-  chart.selectAll('[data-sample="' + index + '"] rect').attr("width", time(sample.audio_buffer.duration))
-}
-
-waiting_samples = [];
-for (var i = 8; i < samples.length; ++i) {
-  waiting_samples.push({
-    name: samples[i],
-    sampleIndex: i
-  })
-}
-
-var currentKeyCode = null;
-$('body').keypress(function(e){
-  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
-  currentKeyCode = e.charCode;
-  chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', true)
-});
-
 
 
 var blobs = chart.selectAll('.waiting-sample')
@@ -166,10 +175,10 @@ blobs.append("rect")
   .attr("x", 0)
   .attr("y", 0)
   .attr("height", ui.height)
-  .on("click", loadSample)
+  .on("click", handle_sample_swap_click)
 blobs.append("text")
   .text(function(s){ return s.name })
-  .on("click", loadSample)
+  .on("click", handle_sample_swap_click)
   .attr("height", ui.height + ui.padding)
   .attr("dy", "1em")
 
