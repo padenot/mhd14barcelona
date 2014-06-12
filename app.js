@@ -52,16 +52,25 @@ Sample.prototype.loaded = function(data) {
   this.loaded_cb();
 }
 
+Sample.prototype.stop = function() {
+  if (this.buffer_source) {
+    this.buffer_source.stop(0);
+    this.buffer_source = null;
+    clearInterval(this.progress_itv)
+    var off = {x: this.current_button, y: this.line, i:0};
+    this.device.send(off);
+  }
+}
+
 // index between 0 and 15
 Sample.prototype.trigger = function(index) {
-  console.log("Totes saw trigger " , arguments);
   if (index < 0 && index > 15) {
     throw "bad index";
   }
   if (this.buffer_source) {
     this.buffer_source.stop(0);
     clearInterval(this.progress_itv)
-    this.progress_itv = 0;
+    this.progress_itv = null;
     // turn the led off;
     var off = {x: this.current_button, y: this.line, i:0};
     this.device.send(off);
@@ -155,3 +164,11 @@ for (var i in lines) {
   lines[i].init();
 }
 
+
+// keyboard
+window.addEventListener("keyup", function(e) {
+  if (e.keyCode >= 49 && e.keyCode <= 48 + 8) {
+    var l = e.keyCode - 49;
+    lines[l].stop();
+  }
+});
