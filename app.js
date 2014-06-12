@@ -47,6 +47,9 @@ function Sample(sink, url, line, device, loaded_cb) {
   this.line = line;
   this.device = device;
   this.loaded_cb = loaded_cb;
+  if (url instanceof AudioBuffer) {
+    this.loaded_cb();
+  }
 }
 
 Sample.prototype.init = function() {
@@ -259,16 +262,16 @@ function switchSample(lineIndex, sampleIndex) {
     lines[lineIndex] = new Sample(analyser, samples[sampleIndex].buffer, lineIndex, device, function() {
       update_sample(this.line, this);
 
-      samples[sample] = old_lines[lineIndex].url
+      samples[sampleIndex] = old_lines[lineIndex].url
 
-      update_sample(sample, old_lines[lineIndex]);
+      update_sample(sampleIndex, old_lines[lineIndex]);
     });
   } else {
-    lines[lineIndex] = new Sample(analyser, samples[sample], lineIndex, device, function() {
-      console.log("loaded ", samples[sample]);
+    lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
+      console.log("loaded ", samples[sampleIndex]);
       update_sample(this.line, this);
 
-      samples[sample] = old_lines[lineIndex].url
+      samples[sampleIndex] = old_lines[lineIndex].url
       update_sample(sample, old_lines[lineIndex])
     });
     lines[lineIndex].init();
