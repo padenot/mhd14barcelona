@@ -51,13 +51,36 @@ wsServer.on('request', function(request) {
       }
     });
 
+    var state = [-1, -1, -1, -1, -1, -1, -1, -1];
+    var prevframe;
 
     connection.on('message', function(message) {
-      console.log("message");
       if (message.type === 'utf8') {
-        console.log('Received Message: ' + message.utf8Data);
+        // console.log('Received Message: ' + message.utf8Data);
         var frame = JSON.parse(message.utf8Data);
-        device.led(frame.x, frame.y, frame.i);
+        if (frame.x != undefined) {
+          device.led(frame.x, frame.y, frame.i);
+          state[frame.y] = frame.x;
+        } else {
+          if (prevframe) {
+            for (var i = 0; i < 16; i++) {
+              for (var j = 0; j < prevframe[i]; j++) {
+                device.led(i, 7 - j, 0);
+              }
+            }
+          }
+          for (var i = 0; i < 16; i++) {
+            for (var j = 0; j < frame[i]; j++) {
+              device.level(i, 7 - j, 4);
+            }
+          }
+          prevframe = frame;
+          for (var i = 0; i < 8; i++) {
+            if (state[i] != -1) {
+              device.led(i, state[i], 1);
+            }
+          }
+        }
       } else if (message.type === 'binary') {
         console.log('Received Binary Message of ' + message.binaryData.length + ' bytes');
         connection.sendBytes(message.binaryData);

@@ -153,9 +153,24 @@ var samples = [
 ];
 var sample_dir = "samples/"
 
+var analyser = ctx.createAnalyser();
+analyser.connect(ctx.destination);
+analyser.fftSize = 32;
+var array = new Uint8Array(analyser.frequencyBinCount);
+
+function render() {
+  analyser.getByteFrequencyData(array);
+  for (var i = 0 ; i < analyser.frequencyBinCount; i++) {
+    array[i] /= 32;
+  }
+  lines[0].device.send(array);
+  setTimeout(render, 1000 / 24);
+}
+
+
 // load the first 8 samples
 for (var i = 0; i < 8; i++) {
-  lines[i] = new Sample(ctx.destination, sample_dir + samples[i], i, device, function() {
+  lines[i] = new Sample(analyser, sample_dir + samples[i], i, device, function() {
     console.log("loaded ", samples[i]);
   });
 }
@@ -164,11 +179,13 @@ for (var i in lines) {
   lines[i].init();
 }
 
-
 // keyboard
 window.addEventListener("keyup", function(e) {
   if (e.keyCode >= 49 && e.keyCode <= 48 + 8) {
     var l = e.keyCode - 49;
     lines[l].stop();
+  }
+  if (e.keyCode == 48 + 8 + 1) {
+    render();
   }
 });
