@@ -172,12 +172,17 @@ Device.prototype.receive = function(message) {
     lines[obj.y].trigger(obj.x);
     this.down[obj.y] = [];
   }
+  if (old_lines[obj.y]) {
+    old_lines[obj.y].stop();
+    old_lines[obj.y] = null;
+  }
   updateUi(obj);
 }
 
 var ctx = new AudioContext();
 var device = new Device(connection);
 var lines  = [];
+var old_lines = [];
 var samples = [
 "P5mlrDRUMS.ogg",
 "P5mlrVOICE2.ogg",
@@ -196,6 +201,7 @@ var samples = [
 "P5mlrVOICE.ogg",
 ];
 var sample_dir = "samples/"
+samples = samples.map(function(url) { return sample_dir + url })
 
 var analyser = ctx.createAnalyser();
 analyser.connect(ctx.destination);
@@ -214,8 +220,10 @@ function render() {
 
 // load the first 8 samples
 for (var i = 0; i < 8; i++) {
-  lines[i] = new Sample(analyser, sample_dir + samples[i], i, device, function() {
+  old_lines[i] = null;
+  lines[i] = new Sample(analyser, samples[i], i, device, function() {
     console.log("loaded ", samples[i]);
+    updateSample(this.line, this)
   });
 }
 
@@ -223,6 +231,25 @@ for (var i in lines) {
   lines[i].init();
 }
 
+
+function switchSample(lineIndex, sampleIndex) {
+  console.log("Switching active sample "+lines[lineIndex].url+" with passive sample "+samples[sampleIndex])
+  if (!old_lines[lineIndex]) {
+    console.log(" storing the old lines")
+    old_lines[lineIndex] = lines[lineIndex]
+  } else {
+    console.log("old lines linger")
+  }
+  lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
+    console.log("loaded ", samples[sampleIndex]);
+    updateSample(this.line, this);
+
+    samples[sampleIndex] = old_lines[lineIndex].url
+    updateSample(sampleIndex, old_lines[lineIndex])
+  });
+  lines[lineIndex].init();
+  // TODO : gracefully shut down the old sample
+}
 // keyboard
 window.addEventListener("keyup", function(e) {
   if (e.keyCode >= 49 && e.keyCode <= 48 + 8) {
@@ -233,3 +260,4 @@ window.addEventListener("keyup", function(e) {
     render();
   }
 });
+
