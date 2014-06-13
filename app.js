@@ -64,13 +64,14 @@ Sample.prototype.loaded = function(data) {
 }
 
 Sample.prototype.stop = function() {
+  console.log("Called stop on "+this.display_name())
   if (this.buffer_source) {
     this.buffer_source.stop(0);
     this.buffer_source = null;
-    clearInterval(this.progress_itv)
-    var off = {x: this.current_button, y: this.line, i:0};
-    this.device.send(off);
   }
+  clearInterval(this.progress_itv)
+  var off = {x: this.current_button, y: this.line, i:0};
+  this.device.send(off);
 }
 
 // index between 0 and 15
@@ -289,6 +290,7 @@ window.addEventListener("keyup", function(e) {
   }
   if (e.keyCode == 48) {
     lines.forEach(function(l){ l.stop() });
+    old_lines.forEach(function(l){ if (l) l.stop() });
   }
 });
 

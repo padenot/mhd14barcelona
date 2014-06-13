@@ -1,17 +1,12 @@
 R.ready(function() {
-  $('.sign-in').show();
-  console.warn("REBECCA: just got ready");
+  $('.rdio').show();
   if (R.authenticated()) {
-    $('.authed').show();
-    $('.sign-in').hide();
+    postAuth();
   } else {
     $('.sign-in').click(function() {
-      console.warn("REBECCA: sign in clicked");
       R.authenticate(function(nowAuthenticated) {
-        console.warn("REBECCA: jheard back from Rdio : "+nowAuthenticated);
         if (nowAuthenticated) {
-          $('.authed').show();
-          $('.sign-in').hide();
+          postAuth();
         }
       });
     });
@@ -23,6 +18,12 @@ R.ready(function() {
     }
   })
 });
+
+function postAuth() {
+  $('.authed').show();
+  $('.sign-in').hide();
+  $('.welcome').text("Welcome, "+ R.currentUser.get('firstName'));
+}
 function RdioSample(track_id, line, device, loaded_cb) {
   this.url = 'rdio ' + track_id
   this.track_id = track_id;
@@ -36,7 +37,7 @@ function RdioSample(track_id, line, device, loaded_cb) {
 }
 
 RdioSample.prototype.init = function() {
-  console.log("REB>> Initi")
+  console.log("REB>> Initi "+ this.track_id)
   R.player.volume(0);
   R.player.repeat(R.player.REPEAT_ONE);
   R.player.play({ source: this.track_id, initialPosition: this.begin });
@@ -107,7 +108,14 @@ RdioSample.prototype.progress = function() {
   this.device.send(off);
 
   this.current_button++;
+  if (this.index_right < this.index_left) {
+    console.log("WTF! Correcting some index problems...")
+    var temp = this.index_left;
+    this.index_left = this.index_right;
+    this.index_right = temp;
+  }
   if (this.current_button >= this.index_right) {
+    console.log(" >> hit the right edge ("+this.index_right+"), bouncing back to ("+this.index_left+")")
     this.current_button = this.index_left;
     var offset_seconds = this.begin + this.index_left * this.button_length;
     R.player.position(offset_seconds);
@@ -118,19 +126,55 @@ RdioSample.prototype.progress = function() {
   this.device.send(on);
 }
 RdioSample.prototype.display_name = function() {
-  return R.player.playingTrack().get('name') + " : "+ this.duration_ms()/1000 + "s"
+  return R.player.playingTrack().get('name') + " : "+ this.duration_s() + "s"
 }
-RdioSample.prototype.duration_ms = function() {
-  return (this.end - this.begin) * 1000;
+RdioSample.prototype.duration_s = function() {
+  return (this.end - this.begin);
 }
 
 rdioSample = null
-$('.load-track').click(function() {
-  console.log("Rebecca, are we going to play this ",  $('.track-id').val() )
-  rdioSample = new RdioSample($('.track-id').val(), 7, device, function() {
-    console.log("REBECCA: updating THE SAMPLE")
+var handle_use_track_click = function(e) {
+  var track_id = $(e.currentTarget).data('id')
+  if (rdioSample) {
+    rdioSample.stop();
+  }
+  rdioSample = new RdioSample(track_id, 7, device, function() {
     update_sample(7, rdioSample);
   });
   rdioSample.init();
   lines[7] = rdioSample;
+}
+$('.find-track').click(function() {
+  R.request({
+    method: 'searchSuggestions',
+    content: {
+      query: $('.track-id').val(),
+      types: 'Track'
+    },
+    success: function(response) {
+      if (!response.result || response.result.length == 0) {
+        $('.search-results').html("No results found, please try again...")
+      }
+      var clunkyHtmlString = ''
+      var results = []
+      response.result.forEach(function(entry) {
+        clunkyHtmlString += "<div class='entry'><img src='"+entry.icon+"'><b>" +
+          entry.name +"</b> from "+ entry.album +" by "+entry.artist+" <div class='button track-id' data-id="+ entry.key+">Use</div></div>"
+        results.push({
+          name: entry.name,
+          key: entry.key,
+          artist: entry.artist,
+          album: entry.album,
+          icon: entry.icon
+        });
+      });
+      $('.search-results').html(clunkyHtmlString);
+      $('.search-results .track-id').click(handle_use_track_click);
+    }
+  });
 })
+$('.expander').click(function() { 
+  $('.expander').toggleClass('expanded') 
+  $('.rdio').toggleClass('expanded') 
+})
+
