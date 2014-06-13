@@ -118,7 +118,7 @@ Sample.prototype.trigger = function(index_left, index_right) {
 
   this.buffer_source.start(0, offset_seconds, this.audio_buffer.duration)
 
-  if (this.index_right != undefined) {
+  if (index_right != undefined) {
     this.buffer_source.loopStart = offset_seconds
     this.buffer_source.loopEnd = this.index_right * button_length;
   } else {
@@ -214,6 +214,7 @@ var lines  = [];
 // old_lines tracks samples that have been switched out but haven't been killed yet via a trigger
 var old_lines = [];
 var samples = [
+"P5mlrDRUMS.ogg",
 "P5mlrVOICE2.ogg",
 "P5mlrARPCHORD.ogg",
 "P5mlrARP.ogg",
@@ -228,7 +229,6 @@ var samples = [
 "P5mlrHARDDUB.ogg",
 "P5mlrSTRINGS.ogg",
 "P5mlrVOICE.ogg",
-"P5mlrDRUMS.ogg",
 ];
 var sample_dir = "samples/"
 samples = samples.map(function(url) { return sample_dir + url })
