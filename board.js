@@ -67,9 +67,15 @@ function remove_key_selection() {
   currentKeyCode = null;
 }
 $('body').keypress(function(e){
+  console.log("e.keyCode "+e.keyCode)
   if (e.keyCode == 13) { // enter
     load_cut_sample(dragstate.down.x / selection.width, dragstate.up.x / selection.width);
     return;
+  }
+  if (e.keyCode == 113) { // q
+    $('#preview-wrapper').hide();
+    editor.buffer = null;
+    editor.sample = null;
   }
   chart.selectAll('.keyed-' + currentKeyCode).classed('active-key-press', false)
   currentKeyCode = e.charCode;
@@ -146,6 +152,9 @@ var editor = {
 }
 
 function draw_editor(data, sample) {
+  cvs = document.querySelector("#preview");
+  $('#preview-wrapper').show();
+  $('#preview-wrapper .name').text(sample.name)
     editor.buffer = data;
     editor.sample = sample;
     var factor = data.length / window.innerWidth;
@@ -189,50 +198,49 @@ function draw_editor(data, sample) {
       c.fillStyle = "rgba(0, 0, 0, 0.4)";
       c.fillRect(j++, cvs.height / 1.3, 1.5, +rmsvalue * 0.5);
     }
-  }
+}
 
 function load_in_editor(sample) {
   console.log(sample);
   if (sample.dropped) {
     ctx.decodeAudioData(sample.raw_buffer, function(data) {
-     draw_editor(data, sample) 
+      draw_editor(data, sample) 
     });
   } else {
     getFile(sample.name,function(data) {
-     draw_editor(data, sample) 
+      draw_editor(data, sample) 
     });
   }
 }
 
 window.onload = function() {
-cvs = document.querySelector("#preview");
-selection = document.querySelector("#selection");
+  selection = document.querySelector("#selection");
 
-selection.addEventListener("mousedown", function(e) {
-  dragstate.dragging = true;
-  dragstate.down = {x: e.layerX, y: e.layerY};
-});
+  selection.addEventListener("mousedown", function(e) {
+    dragstate.dragging = true;
+    dragstate.down = {x: e.layerX, y: e.layerY};
+  });
 
-selection.addEventListener("mouseup", function(e) {
-  dragstate.dragging = false;
-  if (!dragstate.moved) {
-    return;
-  }
-  dragstate.up = {x: e.layerX, y: e.layerY};
-});
+  selection.addEventListener("mouseup", function(e) {
+    dragstate.dragging = false;
+    if (!dragstate.moved) {
+      return;
+    }
+    dragstate.up = {x: e.layerX, y: e.layerY};
+  });
 
-selection.addEventListener("mousemove", function(e) {
-  if (!dragstate.dragging) {
-    return;
-  }
-  if (!dragstate.ctx) {
-    dragstate.ctx = selection.getContext("2d");
-  }
-  dragstate.ctx.clearRect(0, 0, selection.width, selection.height);
-  dragstate.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
-  dragstate.ctx.fillRect(dragstate.down.x, 0, e.layerX - dragstate.down.x, selection.height);
-  dragstate.moved = true;
-});
+  selection.addEventListener("mousemove", function(e) {
+    if (!dragstate.dragging) {
+      return;
+    }
+    if (!dragstate.ctx) {
+      dragstate.ctx = selection.getContext("2d");
+    }
+    dragstate.ctx.clearRect(0, 0, selection.width, selection.height);
+    dragstate.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    dragstate.ctx.fillRect(dragstate.down.x, 0, e.layerX - dragstate.down.x, selection.height);
+    dragstate.moved = true;
+  });
 }
 
 function load_cut_sample(start, end) {

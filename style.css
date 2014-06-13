@@ -26,12 +26,9 @@
   stroke: red;
 }
 
-#preview {
-  border: 1px solid red;
-}
-
 #selection {
   z-index: 2;
+  position: relative;
 }
 
 canvas {
@@ -42,6 +39,10 @@ canvas {
 
 #preview-wrapper {
   position:relative;
+  display: none;
+}
+#preview-wrapper .name {
+  float: right;
 }
 
 .board-button {
