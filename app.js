@@ -26,7 +26,6 @@ function getFile(url, cb) {
     ctx.decodeAudioData(request.response, function(data) {
       cb(data);
     }, function() {
-      alert("decodeAudioData error");
     });
   };
 
