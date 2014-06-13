@@ -145,8 +145,7 @@ var editor = {
   sample: "",
 }
 
-function load_in_editor(sample) {
-  getFile(sample.name, function(data) {
+function draw_editor(data, sample) {
     editor.buffer = data;
     editor.sample = sample;
     var factor = data.length / window.innerWidth;
@@ -190,7 +189,19 @@ function load_in_editor(sample) {
       c.fillStyle = "rgba(0, 0, 0, 0.4)";
       c.fillRect(j++, cvs.height / 1.3, 1.5, +rmsvalue * 0.5);
     }
-  });
+  }
+
+function load_in_editor(sample) {
+  console.log(sample);
+  if (sample.dropped) {
+    ctx.decodeAudioData(sample.raw_buffer, function(data) {
+     draw_editor(data, sample) 
+    });
+  } else {
+    getFile(sample.name,function(data) {
+     draw_editor(data, sample) 
+    });
+  }
 }
 
 window.onload = function() {
