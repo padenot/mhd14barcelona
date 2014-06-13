@@ -57,6 +57,11 @@ canvas {
   fill: rgb(255, 184, 0);
   stroke: rgb(145, 112, 27);
 }
+.board-button.pressed.user-pressed {
+  fill: red;
+  stroke: rgb(145, 112, 27);
+}
+
 
 .button {
   border: 1px solid rgb(11, 108, 146);

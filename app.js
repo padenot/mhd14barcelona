@@ -191,12 +191,14 @@ Device.prototype.receive = function(message) {
   if (this.down[obj.y].length > 1) {
     this.down[obj.y] = this.down[obj.y].sort();
     lines[obj.y].trigger(this.down[obj.y][0], this.down[obj.y][this.down[obj.y].length - 1]);
+    obj.user_press = true;
     this.down[obj.y] = [];
   } else {
     if (this.down[obj.y].length == 0) {
       return;
     }
     lines[obj.y].trigger(obj.x);
+    obj.user_press = true;
     this.down[obj.y] = [];
   }
   if (old_lines[obj.y]) {
@@ -272,6 +274,19 @@ function switchSample(lineIndex, sampleIndex) {
 
       update_sample(sampleIndex, old_lines[lineIndex]);
     });
+  } else if (samples[sampleIndex].track_id) {
+    if (rdioSample) {
+      rdioSample.stop();
+    }
+    var old_entry = lines[lineIndex];
+    samples[lineIndex] = samples[sampleIndex];
+    rdioSample = new RdioSample(samples[sampleIndex].track_id, lineIndex, device, function() {
+      samples[sampleIndex] = old_lines[lineIndex];
+      update_sample(this.line, this);
+      update_sample(sampleIndex, old_entry);
+    });
+    lines[lineIndex] = rdioSample;
+    lines[lineIndex].init();
   } else if (samples[sampleIndex].raw_buffer){
     ctx.decodeAudioData(samples[sampleIndex].raw_buffer, function(data) {
       lines[lineIndex] = new Sample(analyser, data, lineIndex, device, function() {
@@ -288,7 +303,7 @@ function switchSample(lineIndex, sampleIndex) {
       console.log("loaded ", samples[sampleIndex]);
       update_sample(this.line, this);
 
-      samples[sampleIndex] = old_lines[lineIndex].url
+      samples[sampleIndex] = samples[lineIndex]
       update_sample(sampleIndex, old_lines[lineIndex])
     });
     lines[lineIndex].init();

@@ -1,5 +1,6 @@
 R.ready(function() {
   $('.rdio').show();
+  $('.sign-in').show();
   if (R.authenticated()) {
     postAuth();
   } else {
@@ -32,7 +33,7 @@ function RdioSample(track_id, line, device, loaded_cb) {
   this.device = device;
   this.loaded_cb = loaded_cb;
   this.running = false;
-  this.begin = 10;
+  this.begin = 0;
   this.end = this.begin + 16;
 }
 
@@ -135,14 +136,18 @@ RdioSample.prototype.duration_s = function() {
 rdioSample = null
 var handle_use_track_click = function(e) {
   var track_id = $(e.currentTarget).data('id')
-  if (rdioSample) {
-    rdioSample.stop();
-  }
-  rdioSample = new RdioSample(track_id, 7, device, function() {
-    update_sample(7, rdioSample);
-  });
-  rdioSample.init();
-  lines[7] = rdioSample;
+  var s = {
+    name: "loading track " + $(e.currentTarget).data('name'),
+    sampleIndex: samples.length,
+    track_id: track_id
+  };
+
+  waiting_samples.push(s);
+  samples.push(s);
+
+  update_waiting();
+
+  switchSample(7, s.sampleIndex);
 }
 $('.find-track').click(function() {
   R.request({
@@ -159,7 +164,7 @@ $('.find-track').click(function() {
       var results = []
       response.result.forEach(function(entry) {
         clunkyHtmlString += "<div class='entry'><img src='"+entry.icon+"'><b>" +
-          entry.name +"</b> from "+ entry.album +" by "+entry.artist+" <div class='button track-id' data-id="+ entry.key+">Use</div></div>"
+          entry.name +"</b> from "+ entry.album +" by "+entry.artist+" <div class='button track-id' data-name='"+entry.name+"'' data-id="+ entry.key+">Use</div></div>"
         results.push({
           name: entry.name,
           key: entry.key,

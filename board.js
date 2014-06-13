@@ -24,6 +24,7 @@ for (var x = 0; x < 16; ++x) {
 
 function update_board_lights(d){
   chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').classed('pressed', d.i);
+  chart.selectAll('[data-x="' + d.x + '"][data-y="' + d.y + '"]').classed('user-pressed', d.user_press);
 }
 
 // ============== sample data
@@ -109,7 +110,7 @@ board.append("rect")
 var update_board_from_mouse = function(light) {
   return function(e) {
     var b = $(e.currentTarget)
-    data = { x: b.data('x'), y: b.data('y'), i: light }
+    data = { x: b.data('x'), y: b.data('y'), i: light, user_press: true }
     device.receive({ data: JSON.stringify(data)});
     update_board_lights(data)
   }
