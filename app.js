@@ -33,7 +33,7 @@ function getFile(url, cb) {
   request.send();
 }
 
-function Sample(sink, url, line, device, loaded_cb) {
+function Sample(sink, url, line, device, loaded_cb, file_name) {
   if (url instanceof AudioBuffer) {
     this.url = ""
     this.audio_buffer = url;
@@ -47,9 +47,11 @@ function Sample(sink, url, line, device, loaded_cb) {
   this.line = line;
   this.device = device;
   this.loaded_cb = loaded_cb;
+  this.file_name = file_name;
   if (url instanceof AudioBuffer) {
     this.loaded_cb();
   }
+
 }
 
 Sample.prototype.init = function() {
@@ -144,6 +146,9 @@ Sample.prototype.progress = function() {
 }
 Sample.prototype.display_name = function() {
   var duration_s = Math.round(this.audio_buffer.duration * 1000);
+  if (this.file_name) {
+    return this.file_name + " " + duration_s;
+  }
   if (!this.url) {
     return "cut sample " + duration_s;
   }
@@ -267,7 +272,18 @@ function switchSample(lineIndex, sampleIndex) {
 
       update_sample(sampleIndex, old_lines[lineIndex]);
     });
-  } else {
+  } else if (samples[sampleIndex].raw_buffer){
+    ctx.decodeAudioData(samples[sampleIndex].raw_buffer, function(data) {
+      lines[lineIndex] = new Sample(analyser, data, lineIndex, device, function() {
+        console.log("loaded ", samples[sampleIndex]);
+        update_sample(this.line, this);
+
+        samples[sampleIndex] = old_lines[lineIndex].url
+        update_sample(sampleIndex, old_lines[lineIndex])
+      }, samples[sampleIndex].name);
+      lines[lineIndex].init();
+    });
+  } else { // url
     lines[lineIndex] = new Sample(analyser, samples[sampleIndex], lineIndex, device, function() {
       console.log("loaded ", samples[sampleIndex]);
       update_sample(this.line, this);
