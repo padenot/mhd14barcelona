@@ -110,7 +110,7 @@ board.append("rect")
 var update_board_from_mouse = function(light) {
   return function(e) {
     var b = $(e.currentTarget)
-    data = { x: b.data('x'), y: b.data('y'), i: light, user_press: true }
+    data = { x: b.data('x'), y: b.data('y'), i: light, user_press: light }
     device.receive({ data: JSON.stringify(data)});
     update_board_lights(data)
   }

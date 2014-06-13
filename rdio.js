@@ -173,12 +173,13 @@ $('.find-track').click(function() {
           icon: entry.icon
         });
       });
+      $('.track-id').blur();
       $('.search-results').html(clunkyHtmlString);
       $('.search-results .track-id').click(handle_use_track_click);
     }
   });
 })
-$('.expander').click(function() { 
+$('.expander, .welcome, .logo').click(function() { 
   $('.expander').toggleClass('expanded') 
   $('.rdio').toggleClass('expanded') 
 })
