@@ -216,6 +216,7 @@ var samples = [
 "P5mlrDRUMS.ogg",
 "P5mlrVOICE2.ogg",
 "P5mlrARPCHORD.ogg",
+"P5mlrBASS1.ogg",
 "P5mlrARP.ogg",
 "P5mlrCHORDs.ogg",
 "P5mlrDUB.ogg",
@@ -228,6 +229,8 @@ var samples = [
 "P5mlrHARDDUB.ogg",
 "P5mlrSTRINGS.ogg",
 "P5mlrVOICE.ogg",
+"P5mlrBASS2.ogg",
+"P5mlrBASS3.ogg"
 ];
 var sample_dir = "samples/"
 samples = samples.map(function(url) { return sample_dir + url })
